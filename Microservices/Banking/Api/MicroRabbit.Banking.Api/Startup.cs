@@ -11,6 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using MicroRabbit.Infra.IoC;
+using MicroRabbit.Banking.Data.Context;
+using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace MicroRabbit.Banking.Api
 {
@@ -26,12 +30,31 @@ namespace MicroRabbit.Banking.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<BankingDbContext>(options => {
+                options.UseSqlServer(Configuration.GetConnectionString("BankingDbConnection"));
+            });
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "MicroRabbit.Banking.Api", Version = "v1" });
             });
+
+            services.AddSwaggerGen(c => {
+                c.SwaggerDoc("API_V1", new OpenApiInfo {
+                    Title = "Banking MicroService",
+                    Version = "v1"
+                });
+            });
+
+            services.AddMediatR(typeof(Startup));
+
+            RegisterServices(services);
+        }
+
+        private void RegisterServices(IServiceCollection services)
+        {
+            DependecyContainer.RegisterServices(services);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,7 +64,7 @@ namespace MicroRabbit.Banking.Api
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MicroRabbit.Banking.Api v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Banking Microservice v1"));
             }
 
             app.UseHttpsRedirection();
